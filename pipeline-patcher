@@ -1,0 +1,225 @@
+#!/bin/bash
+set -euo pipefail
+
+# Find the digest and full image ref for a given task bundle.
+# (It would be better to use the acceptable bundles/trusted task list,
+# but this is simpler and will produce the same result in most cases.)
+get_pinned_task_bundle_ref() {
+    local task_name=$1
+    local tag=$2
+
+    local repo="quay.io/konflux-ci/tekton-catalog/task-$task_name"
+    local digest=$(skopeo inspect --raw "docker://$repo:$tag" | sha256sum | cut -d' ' -f1)
+
+    # We want the tag as well as the digest
+    echo "$repo:$tag@sha256:$digest"
+}
+
+# Prepare bundles resolver data for injection into the task yaml
+bundle_resolver_data() {
+    local task_name=$1
+    local version=$2
+
+    local bundle_ref=$(get_pinned_task_bundle_ref $task_name $version)
+
+    jq -c <<END_JSON
+        {
+            "params": [
+                { "name": "name",   "value": "$task_name" },
+                { "name": "bundle", "value": "$bundle_ref" },
+                { "name": "kind",   "value": "task" }
+            ],
+            "resolver": "bundles"
+        }
+END_JSON
+}
+
+# I'm assuming the tasks are defined the same across the
+# different pipelines so this one should be as good as any.
+# Todo: Support for tasks in non-docker pipelines.
+PIPELINE=docker-build
+
+# Base URL for curl fetching
+GIT_REF=main
+BUILD_DEFS_URL=https://raw.githubusercontent.com/konflux-ci/build-definitions/refs/heads/${GIT_REF}
+
+# There are two simliar pipeline definitions, one conventional, and one for oci trusted artifacts
+PIPELINE_YAML=${BUILD_DEFS_URL}/pipelines/${PIPELINE}/${PIPELINE}.yaml
+PIPELINE_YAML_OCI_TA=${BUILD_DEFS_URL}/pipelines/${PIPELINE}-oci-ta/${PIPELINE}-oci-ta.yaml
+
+# Find the task in the pipeline definition from build-definitions repo
+# and extract its yaml snippet
+extract_pipeline_task_raw_yaml() {
+    local task_name=$1
+
+    # Detect an oci-ta task and choose the appropriate pipeline
+    if [[ "${task_name}" =~ -oci-ta ]]; then
+        local pipeline_url=${PIPELINE_YAML_OCI_TA}
+    else
+        local pipeline_url=${PIPELINE_YAML}
+    fi
+
+    # Output the task's yaml, (as a list of length one for convenience)
+    curl -s "${pipeline_url}" | yq ".spec.tasks[] | select(.taskRef.name == \"${task_name}\") | [.]"
+}
+
+list_known_tasks() {
+    for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML; do
+        curl -s "$p" | yq '.spec.tasks[].taskRef.name' ;
+    done | sort | uniq
+}
+
+# Put together a yaml snippet with a bundle resolved taskRef ready to insert into a
+# Konflux pipeline
+extract_pipeline_task() {
+    local task_name=$1
+
+    # Extract the raw yaml snipped
+    local task_yaml=$(extract_pipeline_task_raw_yaml $task_name)
+
+    if [[ "$task_yaml" == "[]" ]]; then
+        echo "Task '$task_name' not found. Aborting. Known tasks:"
+        list_known_tasks | sed 's/^/  /'
+        exit 1
+    fi
+
+    # The version is something like 0.1 or 0.2. It should match the
+    # tag in the tekton bundle image ref.
+    local task_version=$(yq '.[0].taskRef.version' <<< "$task_yaml")
+
+    # Compact json for the new bundle resolved taskRef
+    local bundle_task_ref=$(bundle_resolver_data $task_name $task_version)
+
+    # Replace the standard in-cluster taskRef with a bundle resolved taskRef
+    # and output the modified yaml
+    yq ".[0] + {\"taskRef\": $bundle_task_ref } | [.]" <<< "$task_yaml"
+}
+
+find_task_in_pipeline() {
+    local pipeline_file="$1"
+    local task_name="$2"
+
+    # Look in the list of tasks for tasks that have the matching name in the taskRef params and pick out the first one
+    yq "[.spec.pipelineSpec.tasks[] | select(.taskRef.params[] | select(.name == \"name\" and .value == \"$task_name\"))] | .[0]" < $pipeline_file
+}
+
+detect_task_in_pipeline() {
+    local pipeline_file="$1"
+    local task_name="$2"
+
+    local result=$(find_task_in_pipeline $pipeline_file $task_name)
+
+    [[ "$result" != "null" ]]
+}
+
+detect_oci_ta_pipeline() {
+    local pipeline_file="$1"
+
+    # The * will work as a wildcard
+    detect_task_in_pipeline $pipeline_file "*-oci-ta"
+}
+
+insert_pipeline_task() {
+    local pipeline_file="$1"
+    local new_task_name="$2"
+    local before_task_name="$3"
+
+    if detect_task_in_pipeline $pipeline_file $new_task_name; then
+        echo "Task '$new_task_name' found already in pipeline '$(basename $pipeline_file)'. Skipping."
+        return
+    fi
+
+    if ! detect_task_in_pipeline $pipeline_file $before_task_name; then
+        echo "Before task '$before_task_name' not found in pipeline '$(basename $pipeline_file)'. Skipping."
+        return
+    fi
+
+    if ! detect_oci_ta_pipeline $pipeline_file; then
+        if [[ ! $new_task_name =~ -oci-ta$ ]]; then
+            echo "Adding an oci-ta task to a non-oci-ta pipeline is probably a mistake. Skipping."
+            return
+        fi
+    else
+        if [[ ! $new_task_name =~ -oci-ta$ ]]; then
+            echo "Looks like your pipeline is oci-ta. Consider if there's an oci-ta version of this task you should use instead."
+            # But continue, since it might be fine. Not all tasks in an oci-ta pipeline use the trusted artifacts.
+        fi
+    fi
+
+    # The tasks have a name in the taskRef resolver and a name in the pipeline. Since
+    # those can be different we now going to find the pipeline name of the "before task",
+    # i.e. the task that we want to use to determine the place to insert the task.
+    local before_task_pipeline_name=$(find_task_in_pipeline $pipeline_file $before_task_name | yq '.name')
+
+    # Prepare the yaml snippet to insert
+    extract_pipeline_task "$new_task_name" > "/tmp/$new_task_name.yaml"
+
+    # Use awk instead of yq here to avoid producing unwanted formatting changes
+    awk \
+        -v new_task_file="/tmp/$new_task_name.yaml" \
+        -v before_line_match="- name: $before_task_pipeline_name" \
+        '
+            function get_indent(line) {
+                match(line, /^[ ]*/)
+                return substr(line, RSTART, RLENGTH)
+            }
+
+            {
+                if ($0 ~ before_line_match && !added) {
+                    indent = get_indent($0)
+                    # Read lines from new task file
+                    while ((getline line < new_task_file) > 0) {
+                        # Apply correct indentation
+                        print indent line
+                    }
+                    close(new_task_file)
+                }
+                print
+            }
+        ' \
+        "$pipeline_file" > "$pipeline_file.tmp"
+
+    mv "$pipeline_file.tmp" "$pipeline_file"
+}
+
+show_diff() {
+    local pipeline_file="$1"
+    local dir=$(dirname $pipeline_file)
+    local file=$(basename $pipeline_file)
+    (cd $dir && git diff $file )
+}
+
+usage() {
+        echo "Usage:"
+        echo "  ${0} list-tasks # show a list of known tasks"
+        echo "  ${0} task-yaml <new-task-name> # output task yaml"
+        echo "  ${0} patch <path-to-pipeline-definition-yaml> <new-task-name> # patch pipeline to add new task"
+}
+
+case "${1:-""}" in
+    "list-tasks")
+        list_known_tasks
+        ;;
+
+    "task-yaml")
+        TASK_NAME="$2"
+
+        extract_pipeline_task "$TASK_NAME"
+        ;;
+
+    "patch")
+        PIPELINE_FILE="$2"
+        NEW_TASK_NAME="$3"
+        # The new task will be inserted before this task
+        BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
+
+        insert_pipeline_task $PIPELINE_FILE $NEW_TASK_NAME "$BEFORE_TASK_NAME"
+        show_diff $PIPELINE_FILE
+        ;;
+
+    *)
+        usage
+        ;;
+esac
+
+# vim: sw=4
