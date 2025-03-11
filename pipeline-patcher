@@ -207,11 +207,25 @@ show_diff() {
 }
 
 usage() {
-        echo "Usage:"
-        echo "  ${0} list-tasks # show a list of known tasks"
-        echo "  ${0} task-ref <task-name> # show the latest trusted bundle ref a given task"
-        echo "  ${0} task-yaml <task-name> # output task yaml"
-        echo "  ${0} patch <path-to-pipeline-definition-yaml> <new-task-name> # patch pipeline to add new task"
+    cat <<EOT
+Konflux Pipeline Patcher
+
+Usage:
+    # Show a list of known pipeline tasks
+    ${0} list-tasks
+
+    # Show the latest trusted bundle ref for given pipeline task
+    ${0} task-ref <task-name> <version>
+
+    # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
+    ${0} task-yaml <task-name>
+
+    # Modify a Konflux pipeline definition to add a new task
+    ${0} patch <path-to-pipeline-yaml> <new-task-name>
+
+Source:
+    https://github.com/simonbaird/konflux-pipeline-patcher
+EOT
 }
 
 case "${1:-""}" in
@@ -243,7 +257,7 @@ case "${1:-""}" in
         show_diff $PIPELINE_FILE
         ;;
 
-    *)
+    "help" | *)
         usage
         ;;
 esac
