@@ -1,18 +1,35 @@
 #!/bin/bash
 set -euo pipefail
 
+KONFLUX_CATALOG=quay.io/konflux-ci/tekton-catalog
+
+trusted_task_data() {
+    local acceptable_bundles_repo="$KONFLUX_CATALOG/data-acceptable-bundles"
+
+    local blob_digest=$(oras manifest fetch "$acceptable_bundles_repo:latest" | jq -r '.layers[0].digest')
+
+    oras blob fetch "$acceptable_bundles_repo@$blob_digest" --output -
+}
+
 # Find the digest and full image ref for a given task bundle.
-# (It would be better to use the acceptable bundles/trusted task list,
-# but this is simpler and will produce the same result in most cases.)
+# Use the acceptable bundles data bundle
 get_pinned_task_bundle_ref() {
     local task_name=$1
     local tag=$2
 
-    local repo="quay.io/konflux-ci/tekton-catalog/task-$task_name"
-    local digest=$(skopeo inspect --raw "docker://$repo:$tag" | sha256sum | cut -d' ' -f1)
+    local task_repo=$KONFLUX_CATALOG/task-$task_name
+    local trusted_task_key="oci://$task_repo:$tag"
 
-    # We want the tag as well as the digest
-    echo "$repo:$tag@sha256:$digest"
+    # Assume the first one is is the newest and best
+    local digest=$(trusted_task_data | yq ".trusted_tasks.\"$trusted_task_key\"[0].ref")
+
+    if [[ $digest == "null" ]]; then
+        echo "Can't find $trusted_task_key in the trusted task list. Aborting."
+        exit 1
+    fi
+
+    # Include the tag as well as the digest
+    echo "$task_repo:$tag@$digest"
 }
 
 # Prepare bundles resolver data for injection into the task yaml
@@ -192,13 +209,22 @@ show_diff() {
 usage() {
         echo "Usage:"
         echo "  ${0} list-tasks # show a list of known tasks"
-        echo "  ${0} task-yaml <new-task-name> # output task yaml"
+        echo "  ${0} task-ref <task-name> # show the latest trusted bundle ref a given task"
+        echo "  ${0} task-yaml <task-name> # output task yaml"
         echo "  ${0} patch <path-to-pipeline-definition-yaml> <new-task-name> # patch pipeline to add new task"
 }
 
 case "${1:-""}" in
     "list-tasks")
         list_known_tasks
+        ;;
+
+    "task-ref")
+        TASK_NAME="$2"
+        VERSION="$3"
+
+        # Todo maybe: List all the versions if version is not specified
+        get_pinned_task_bundle_ref "$TASK_NAME" "$VERSION"
         ;;
 
     "task-yaml")
