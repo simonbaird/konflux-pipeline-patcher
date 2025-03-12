@@ -15,6 +15,10 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 * oras
 * awk
 
+## Status
+
+It's functional, but should be considered a POC/demo at this stage.
+
 ## See also
 
 * <https://github.com/konflux-ci/build-definitions/>
