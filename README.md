@@ -7,6 +7,13 @@
 curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher && chmod a+x ./pipeline-patcher
 ./pipeline-patcher help
 ```
+## Requirements
+
+* bash
+* yq
+* jq
+* oras
+* awk
 
 ## See also
 
