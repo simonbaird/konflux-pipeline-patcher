@@ -3,10 +3,12 @@ set -euo pipefail
 
 KONFLUX_CATALOG=quay.io/konflux-ci/tekton-catalog
 
+# Use with a pipe to indent some text
 indented() {
     awk '{print "  " $0}'
 }
 
+# Extract trusted task data from the acceptable bundles data bundle
 trusted_task_data() {
     local acceptable_bundles_repo="$KONFLUX_CATALOG/data-acceptable-bundles"
 
@@ -15,7 +17,7 @@ trusted_task_data() {
     oras blob fetch "$acceptable_bundles_repo@$blob_digest" --output -
 }
 
-# Find the digest and full image ref for a given task bundle.
+# Find the digest and full image ref for a given task bundle
 # Use the acceptable bundles data bundle
 get_pinned_task_bundle_ref() {
     local task_name=$1
@@ -36,7 +38,7 @@ get_pinned_task_bundle_ref() {
     echo "$task_repo:$tag@$digest"
 }
 
-# Prepare bundles resolver data for injection into the task yaml
+# Prepare tekton bundles resolver data for injection into the pipeline task yaml
 bundle_resolver_data() {
     local task_name=$1
     local version=$2
@@ -55,20 +57,18 @@ bundle_resolver_data() {
 END_JSON
 }
 
-# I'm assuming the tasks are defined the same across the
-# different pipelines so this one should be as good as any.
-# Todo: Support for tasks in non-docker pipelines.
-PIPELINE=docker-build
-
 # Base URL for curl fetching
 GIT_REF=main
 BUILD_DEFS_URL=https://raw.githubusercontent.com/konflux-ci/build-definitions/refs/heads/${GIT_REF}
 
-# There are two simliar pipeline definitions, one conventional, and one for oci trusted artifacts
-PIPELINE_YAML=${BUILD_DEFS_URL}/pipelines/${PIPELINE}/${PIPELINE}.yaml
-PIPELINE_YAML_OCI_TA=${BUILD_DEFS_URL}/pipelines/${PIPELINE}-oci-ta/${PIPELINE}-oci-ta.yaml
+# Todo: Support finding tasks in all the non-docker pipelines.
 
-# Look also for fbc tasks here
+# There are two simliar docker-build pipeline definitions, one conventional,
+# and one that uses the oci trusted artifacts versions of the important tasks
+PIPELINE_YAML=${BUILD_DEFS_URL}/pipelines/docker-build/docker-build.yaml
+PIPELINE_YAML_OCI_TA=${BUILD_DEFS_URL}/pipelines/docker-build-oci-ta/docker-build-oci-ta.yaml
+
+# The FBC pipeline has FBC specific tasks not found in the docker-build pipeline
 PIPELINE_YAML_FBC=${BUILD_DEFS_URL}/pipelines/fbc-builder/fbc-builder.yaml
 
 # Find the task in the pipeline definition from build-definitions repo
@@ -91,18 +91,20 @@ extract_pipeline_task_raw_yaml() {
     curl -s "${pipeline_url}" | yq ".spec.tasks[] | select(.taskRef.name == \"${task_name}\") | [.]"
 }
 
+# Show a list of tasks that we could get yaml snippets for.
+# Include the task's version in the output.
 list_known_tasks() {
     for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML $PIPELINE_YAML_FBC; do
         curl -s "$p" | yq '.spec.tasks[].taskRef | (.name + " " + .version)' ;
     done | sort | uniq
 }
 
-# Put together a yaml snippet with a bundle resolved taskRef ready to insert into a
-# Konflux pipeline
+# Put together a yaml snippet with a bundle resolved taskRef ready to insert
+# into a Konflux pipeline
 extract_pipeline_task() {
     local task_name=$1
 
-    # Extract the raw yaml snipped
+    # Extract the raw yaml snippet
     local task_yaml=$(extract_pipeline_task_raw_yaml $task_name)
 
     if [[ "$task_yaml" == "[]" ]]; then
@@ -112,7 +114,7 @@ extract_pipeline_task() {
     fi
 
     # The version is something like 0.1 or 0.2. It should match the
-    # tag in the tekton bundle image ref.
+    # tag in the tekton bundle image ref
     local task_version=$(yq '.[0].taskRef.version' <<< "$task_yaml")
 
     # Compact json for the new bundle resolved taskRef
@@ -123,12 +125,14 @@ extract_pipeline_task() {
     yq ".[0] + {\"taskRef\": $bundle_task_ref } | [.]" <<< "$task_yaml"
 }
 
+# Expected to be either Pipeline or PipelineRun
 get_pipeline_kind() {
     local pipeline_file="$1"
 
     yq '.kind' $pipeline_file
 }
 
+# Return a yq query that specifies where to find the tasks in the yaml pipeline file
 get_pipeline_tasks_path() {
     local pipeline_file="$1"
 
@@ -147,6 +151,7 @@ get_pipeline_tasks_path() {
     esac
 }
 
+# Extract a named pipeline task from a pipeline definition
 find_task_in_pipeline() {
     local pipeline_file="$1"
     local task_name="$2"
@@ -157,6 +162,7 @@ find_task_in_pipeline() {
     yq "[$tasks_path[] | select(.taskRef.params[] | select(.name == \"name\" and .value == \"$task_name\"))] | .[0]" < $pipeline_file
 }
 
+# Determine if a named pipeline task is present in a pipeline definition
 detect_task_in_pipeline() {
     local pipeline_file="$1"
     local task_name="$2"
@@ -166,13 +172,16 @@ detect_task_in_pipeline() {
     [[ "$result" != "null" ]]
 }
 
+# Determine if any oct-ta tasks are present in a pipeline definition
 detect_oci_ta_pipeline() {
     local pipeline_file="$1"
 
-    # The * will work as a wildcard
+    # The * will work as a wildcard in the yq query
     detect_task_in_pipeline $pipeline_file "*-oci-ta"
 }
 
+# Create the yaml snippet for a particular pipeline task and insert it into a pipeline
+# definition right before a particular other task. Do a few sanity check beforehand.
 insert_pipeline_task() {
     local pipeline_file="$1"
     local new_task_name="$2"
@@ -207,13 +216,13 @@ insert_pipeline_task() {
     # i.e. the task that we want to use to determine the place to insert the task.
     local before_task_pipeline_name=$(find_task_in_pipeline $pipeline_file $before_task_name | yq '.name')
 
-    # Somewhere to stash the task yaml
+    # Somewhere to stash the pipeline task yaml
     local task_yaml_tmp="/tmp/$new_task_name.yaml"
 
     # Prepare the yaml snippet to insert
     extract_pipeline_task "$new_task_name" > "$task_yaml_tmp"
 
-    # Awk will look for this line
+    # Awk will look for this line so it knows where to insert the new task
     local before_line_match="- name: $before_task_pipeline_name"
 
     # Use awk instead of yq here to avoid producing unwanted formatting changes
@@ -244,10 +253,11 @@ insert_pipeline_task() {
     # Update the original file with the modified content
     mv "$pipeline_file.tmp" "$pipeline_file"
 
-    # Clean up temporary file
+    # Clean up the temporary file
     rm "$task_yaml_tmp"
 }
 
+# A wrapper for git diff
 show_diff() {
     local pipeline_file="$1"
     local diff_opts="${2:-""}"
@@ -257,12 +267,15 @@ show_diff() {
     (cd $dir && git diff $diff_opts $file )
 }
 
+# Replace commas with spaces to split a string into multiple values
+# (Assume no spaces in the individual values)
 comma_split_tasks() {
     local comma_separated_maybe="$1"
 
     echo "${comma_separated_maybe//,/ }"
 }
 
+# Return a list of the Konflux pipeline definitions in the .tekton directory
 find_pipelines() {
     local git_repo_path="$1"
 
@@ -270,6 +283,7 @@ find_pipelines() {
     ( cd $git_repo_path && git grep -l 'kind: PipelineRun' .tekton/*.yaml )
 }
 
+# Just the usage part of the help
 usage() {
     cat <<EOT
 # Show a list of known pipeline tasks
@@ -294,6 +308,7 @@ ${0} help
 EOT
 }
 
+# Show help for the command line options
 show_help() {
     cat <<EOT
 Konflux Pipeline Patcher
@@ -306,6 +321,8 @@ Source:
 EOT
 }
 
+# Show usage information if the required number of args are
+# not provided, instead of an error like `$3: unbound variable`
 required_args() {
     local required_count=$1
     if [[ "$ARG_COUNT" < $required_count ]]; then
@@ -318,6 +335,7 @@ required_args() {
 MAIN_CMD="${1:-""}"
 ARG_COUNT="$#"
 
+# Main command handler
 case "$MAIN_CMD" in
     "list-tasks")
         list_known_tasks
