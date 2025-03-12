@@ -75,10 +75,10 @@ extract_pipeline_task_raw_yaml() {
     # Detect an oci-ta or fbc task and choose the appropriate pipeline
     # (Beware there are probably edge cases where this isn't going to work.
     # Set pipeline_url manually here if you need to.)
-    if [[ "${task_name}" =~ -oci-ta ]]; then
-        local pipeline_url=${PIPELINE_YAML_OCI_TA}
-    elif [[ "${task_name}" =~ ^fbc-|-fbc$ ]]; then
+    if [[ "${task_name}" =~ ^fbc-|-fbc$ ]]; then
         local pipeline_url=${PIPELINE_YAML_FBC}
+    elif [[ "${task_name}" =~ -oci-ta ]]; then
+        local pipeline_url=${PIPELINE_YAML_OCI_TA}
     else
         local pipeline_url=${PIPELINE_YAML}
     fi
