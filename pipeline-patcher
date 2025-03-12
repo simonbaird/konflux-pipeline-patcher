@@ -342,8 +342,8 @@ case "${1:-""}" in
             for t in $(comma_split_tasks "$NEW_TASK_NAME"); do
                 insert_pipeline_task "$GIT_REPO_PATH/$p" $t "$BEFORE_TASK_NAME"
             done
-            show_diff "$GIT_REPO_PATH/$p" --stat
         done
+        show_diff "$GIT_REPO_PATH/.tekton" --stat
         ;;
 
     # For convenience since this can go directly into the readme
