@@ -103,7 +103,7 @@ extract_pipeline_task() {
 
     if [[ "$task_yaml" == "[]" ]]; then
         echo "Task '$task_name' not found. Aborting. Known tasks:"
-        list_known_tasks | sed 's/^/  /'
+        list_known_tasks | awk '{print "  " $0}'
         exit 1
     fi
 
@@ -259,26 +259,35 @@ find_pipelines() {
 
 usage() {
     cat <<EOT
+# Show a list of known pipeline tasks
+${0} list-tasks
+
+# Show the latest trusted bundle ref for given pipeline task
+${0} task-ref <task-name> <version>
+
+# Output a snippet of yaml suitable for adding a task to a Konflux pipeline
+${0} task-yaml <task-name>
+
+# Modify a Konflux pipeline definition to add a new task
+${0} patch <path-to-pipeline-yaml> <new-task-name>
+
+# Modify all the Konflux pipelines in a git repo to add a new task
+${0} patch-all <path-to-git-repo> <new-task-name>
+
+# Show this help
+${0} help
+EOT
+}
+
+show_help() {
+    cat <<EOT
 Konflux Pipeline Patcher
 
 Usage:
-    # Show a list of known pipeline tasks
-    ${0} list-tasks
-
-    # Show the latest trusted bundle ref for given pipeline task
-    ${0} task-ref <task-name> <version>
-
-    # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
-    ${0} task-yaml <task-name>
-
-    # Modify a Konflux pipeline definition to add a new task
-    ${0} patch <path-to-pipeline-yaml> <new-task-name>
-
-    # Modify all the Konflux pipelines in a git repo to add a new task
-    ${0} patch-all <path-to-git-repo> <new-task-name>
+$(usage | awk '{print "  " $0}')
 
 Source:
-    https://github.com/simonbaird/konflux-pipeline-patcher
+  https://github.com/simonbaird/konflux-pipeline-patcher
 EOT
 }
 
@@ -323,8 +332,13 @@ case "${1:-""}" in
         done
         ;;
 
-    "help" | *)
+    # For convenience since this can go directly into the readme
+    "usage")
         usage
+        ;;
+
+    "help" | *)
+        show_help
         ;;
 esac
 
