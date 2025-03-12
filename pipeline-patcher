@@ -234,9 +234,17 @@ insert_pipeline_task() {
 
 show_diff() {
     local pipeline_file="$1"
+    local diff_opts="${2:-""}"
     local dir=$(dirname $pipeline_file)
     local file=$(basename $pipeline_file)
-    (cd $dir && git diff $file )
+    (cd $dir && git diff $diff_opts $file )
+}
+
+find_pipelines() {
+    local git_repo_path="$1"
+
+    # (Don't find non-standard 'kind: Pipeline' files, even though they can be patched)
+    ( cd $git_repo_path && git grep -l 'kind: PipelineRun' .tekton/*.yaml )
 }
 
 usage() {
@@ -255,6 +263,9 @@ Usage:
 
     # Modify a Konflux pipeline definition to add a new task
     ${0} patch <path-to-pipeline-yaml> <new-task-name>
+
+    # Modify all the Konflux pipelines in a git repo to add a new task
+    ${0} patch-all <path-to-git-repo> <new-task-name>
 
 Source:
     https://github.com/simonbaird/konflux-pipeline-patcher
@@ -288,6 +299,18 @@ case "${1:-""}" in
 
         insert_pipeline_task $PIPELINE_FILE $NEW_TASK_NAME "$BEFORE_TASK_NAME"
         show_diff $PIPELINE_FILE
+        ;;
+
+    "patch-all")
+        GIT_REPO_PATH="$2"
+        NEW_TASK_NAME="$3"
+        # The new task will be inserted before this task
+        BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
+
+        for p in $(find_pipelines $GIT_REPO_PATH); do
+            insert_pipeline_task "$GIT_REPO_PATH/$p" $NEW_TASK_NAME "$BEFORE_TASK_NAME"
+            show_diff "$GIT_REPO_PATH/$p" --stat
+        done
         ;;
 
     "help" | *)
