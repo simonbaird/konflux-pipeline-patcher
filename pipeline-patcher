@@ -201,13 +201,19 @@ insert_pipeline_task() {
     # i.e. the task that we want to use to determine the place to insert the task.
     local before_task_pipeline_name=$(find_task_in_pipeline $pipeline_file $before_task_name | yq '.name')
 
+    # Somewhere to stash the task yaml
+    local task_yaml_tmp="/tmp/$new_task_name.yaml"
+
     # Prepare the yaml snippet to insert
-    extract_pipeline_task "$new_task_name" > "/tmp/$new_task_name.yaml"
+    extract_pipeline_task "$new_task_name" > "$task_yaml_tmp"
+
+    # Awk will look for this line
+    local before_line_match="- name: $before_task_pipeline_name"
 
     # Use awk instead of yq here to avoid producing unwanted formatting changes
     awk \
-        -v new_task_file="/tmp/$new_task_name.yaml" \
-        -v before_line_match="- name: $before_task_pipeline_name" \
+        -v new_task_file="$task_yaml_tmp" \
+        -v before_line_match="$before_line_match" \
         '
             function get_indent(line) {
                 match(line, /^[ ]*/)
@@ -229,7 +235,11 @@ insert_pipeline_task() {
         ' \
         "$pipeline_file" > "$pipeline_file.tmp"
 
+    # Update the original file with the modified content
     mv "$pipeline_file.tmp" "$pipeline_file"
+
+    # Clean up temporary file
+    rm "$task_yaml_tmp"
 }
 
 show_diff() {
