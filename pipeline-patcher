@@ -82,7 +82,7 @@ extract_pipeline_task_raw_yaml() {
 
 list_known_tasks() {
     for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML; do
-        curl -s "$p" | yq '.spec.tasks[].taskRef.name' ;
+        curl -s "$p" | yq '.spec.tasks[].taskRef | (.name + " " + .version)' ;
     done | sort | uniq
 }
 
