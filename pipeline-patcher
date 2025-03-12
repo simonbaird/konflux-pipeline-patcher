@@ -196,6 +196,8 @@ insert_pipeline_task() {
         fi
     fi
 
+    echo "Adding task $new_task_name to pipeline $pipeline_file"
+
     # The tasks have a name in the taskRef resolver and a name in the pipeline. Since
     # those can be different we now going to find the pipeline name of the "before task",
     # i.e. the task that we want to use to determine the place to insert the task.
@@ -250,6 +252,10 @@ show_diff() {
     (cd $dir && git diff $diff_opts $file )
 }
 
+comma_split_tasks() {
+    echo "${1//,/ }"
+}
+
 find_pipelines() {
     local git_repo_path="$1"
 
@@ -269,9 +275,11 @@ ${0} task-ref <task-name> <version>
 ${0} task-yaml <task-name>
 
 # Modify a Konflux pipeline definition to add a new task
+# Supports multiple comma-separated task names
 ${0} patch <path-to-pipeline-yaml> <new-task-name>
 
 # Modify all the Konflux pipelines in a git repo to add a new task
+# Supports multiple comma-separated task names
 ${0} patch-all <path-to-git-repo> <new-task-name>
 
 # Show this help
@@ -316,7 +324,10 @@ case "${1:-""}" in
         # The new task will be inserted before this task
         BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
 
-        insert_pipeline_task $PIPELINE_FILE $NEW_TASK_NAME "$BEFORE_TASK_NAME"
+        # Support multiple tasks separated by a comma
+        for t in $(comma_split_tasks "$NEW_TASK_NAME"); do
+            insert_pipeline_task $PIPELINE_FILE $t "$BEFORE_TASK_NAME"
+        done
         show_diff $PIPELINE_FILE
         ;;
 
@@ -327,7 +338,10 @@ case "${1:-""}" in
         BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
 
         for p in $(find_pipelines $GIT_REPO_PATH); do
-            insert_pipeline_task "$GIT_REPO_PATH/$p" $NEW_TASK_NAME "$BEFORE_TASK_NAME"
+            # Support multiple tasks separated by a comma
+            for t in $(comma_split_tasks "$NEW_TASK_NAME"); do
+                insert_pipeline_task "$GIT_REPO_PATH/$p" $t "$BEFORE_TASK_NAME"
+            done
             show_diff "$GIT_REPO_PATH/$p" --stat
         done
         ;;

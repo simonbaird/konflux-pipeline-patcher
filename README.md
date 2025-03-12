@@ -20,9 +20,11 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 ./pipeline-patcher task-yaml <task-name>
 
 # Modify a Konflux pipeline definition to add a new task
+# Supports multiple comma-separated task names
 ./pipeline-patcher patch <path-to-pipeline-yaml> <new-task-name>
 
 # Modify all the Konflux pipelines in a git repo to add a new task
+# Supports multiple comma-separated task names
 ./pipeline-patcher patch-all <path-to-git-repo> <new-task-name>
 
 # Show this help
