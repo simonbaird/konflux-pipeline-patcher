@@ -119,12 +119,38 @@ extract_pipeline_task() {
     yq ".[0] + {\"taskRef\": $bundle_task_ref } | [.]" <<< "$task_yaml"
 }
 
+get_pipeline_kind() {
+    local pipeline_file="$1"
+
+    yq '.kind' $pipeline_file
+}
+
+get_pipeline_tasks_path() {
+    local pipeline_file="$1"
+
+    # So we can work with both a PipelineRun yaml file and a Pipeline yaml file
+    case $(get_pipeline_kind $pipeline_file) in
+        PipelineRun)
+            echo ".spec.pipelineSpec.tasks"
+            ;;
+        Pipeline)
+            echo ".spec.tasks"
+            ;;
+        *)
+            echo "Unexpected kind found in $pipeline_file. Aborting."
+            exit 1
+            ;;
+    esac
+}
+
 find_task_in_pipeline() {
     local pipeline_file="$1"
     local task_name="$2"
 
+    local tasks_path=$(get_pipeline_tasks_path $pipeline_file)
+
     # Look in the list of tasks for tasks that have the matching name in the taskRef params and pick out the first one
-    yq "[.spec.pipelineSpec.tasks[] | select(.taskRef.params[] | select(.name == \"name\" and .value == \"$task_name\"))] | .[0]" < $pipeline_file
+    yq "[$tasks_path[] | select(.taskRef.params[] | select(.name == \"name\" and .value == \"$task_name\"))] | .[0]" < $pipeline_file
 }
 
 detect_task_in_pipeline() {
