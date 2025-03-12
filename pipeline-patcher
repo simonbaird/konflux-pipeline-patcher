@@ -303,12 +303,25 @@ Source:
 EOT
 }
 
-case "${1:-""}" in
+required_args() {
+    local required_count=$1
+    if [[ "$ARG_COUNT" < $required_count ]]; then
+        echo "Usage:"
+        usage | grep $MAIN_CMD | indented
+        exit 1
+    fi
+}
+
+MAIN_CMD="${1:-""}"
+ARG_COUNT="$#"
+
+case "$MAIN_CMD" in
     "list-tasks")
         list_known_tasks
         ;;
 
     "task-ref")
+        required_args 3
         TASK_NAME="$2"
         VERSION="$3"
 
@@ -317,12 +330,14 @@ case "${1:-""}" in
         ;;
 
     "task-yaml")
+        required_args 2
         TASK_NAME="$2"
 
         extract_pipeline_task "$TASK_NAME"
         ;;
 
     "patch")
+        required_args 3
         PIPELINE_FILE="$2"
         NEW_TASK_NAME="$3"
         # The new task will be inserted before this task
@@ -336,6 +351,7 @@ case "${1:-""}" in
         ;;
 
     "patch-all")
+        required_args 3
         GIT_REPO_PATH="$2"
         NEW_TASK_NAME="$3"
         # The new task will be inserted before this task
