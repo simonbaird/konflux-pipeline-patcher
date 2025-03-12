@@ -253,11 +253,14 @@ show_diff() {
     local diff_opts="${2:-""}"
     local dir=$(dirname $pipeline_file)
     local file=$(basename $pipeline_file)
+
     (cd $dir && git diff $diff_opts $file )
 }
 
 comma_split_tasks() {
-    echo "${1//,/ }"
+    local comma_separated_maybe="$1"
+
+    echo "${comma_separated_maybe//,/ }"
 }
 
 find_pipelines() {
