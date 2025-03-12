@@ -3,6 +3,10 @@ set -euo pipefail
 
 KONFLUX_CATALOG=quay.io/konflux-ci/tekton-catalog
 
+indented() {
+    awk '{print "  " $0}'
+}
+
 trusted_task_data() {
     local acceptable_bundles_repo="$KONFLUX_CATALOG/data-acceptable-bundles"
 
@@ -103,7 +107,7 @@ extract_pipeline_task() {
 
     if [[ "$task_yaml" == "[]" ]]; then
         echo "Task '$task_name' not found. Aborting. Known tasks:"
-        list_known_tasks | awk '{print "  " $0}'
+        list_known_tasks | indented
         exit 1
     fi
 
@@ -292,7 +296,7 @@ show_help() {
 Konflux Pipeline Patcher
 
 Usage:
-$(usage | awk '{print "  " $0}')
+$(usage | indented)
 
 Source:
   https://github.com/simonbaird/konflux-pipeline-patcher
