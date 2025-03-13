@@ -181,7 +181,7 @@ detect_oci_ta_pipeline() {
 }
 
 # Create the yaml snippet for a particular pipeline task and insert it into a pipeline
-# definition right before a particular other task. Do a few sanity check beforehand.
+# definition right before a particular other task. Do a few sanity checks beforehand.
 insert_pipeline_task() {
     local pipeline_file="$1"
     local new_task_name="$2"
