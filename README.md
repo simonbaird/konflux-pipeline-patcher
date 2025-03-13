@@ -1,5 +1,7 @@
 
-# A command line tool to help patch your Konflux pipelines
+# Konflux Pipeline Patcher
+
+A command line tool to help add new tasks to existing Konflux pipelines.
 
 ## Installation
 
