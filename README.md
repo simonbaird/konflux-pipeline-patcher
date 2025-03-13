@@ -43,6 +43,10 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 It's functional, but should be considered a POC/demo at this stage.
 
+## Demo
+
+[Demo video (2 minutes)](https://drive.google.com/file/d/1O0dmI9ZiDwMq2JjtxFfM657AUf341pc-/view?usp=sharing)
+
 ## See also
 
 * <https://github.com/konflux-ci/build-definitions/>
