@@ -258,6 +258,17 @@ insert_pipeline_task() {
     rm "$task_yaml_tmp"
 }
 
+insert_multiple_pipeline_tasks() {
+    local pipeline_file="$1"
+    local new_task_name_or_names="$2"
+    local before_task_name="$3"
+
+    # Support multiple tasks separated by a comma
+    for t in $(comma_split_tasks "$new_task_name_or_names"); do
+        insert_pipeline_task "$pipeline_file" $t "$before_task_name"
+    done
+}
+
 # A wrapper for git diff
 show_diff() {
     local pipeline_file="$1"
@@ -361,29 +372,23 @@ case "$MAIN_CMD" in
     "patch")
         required_args 3
         PIPELINE_FILE="$2"
-        NEW_TASK_NAME="$3"
+        NEW_TASK_NAME_OR_NAMES="$3"
         # The new task will be inserted before this task
         BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
 
-        # Support multiple tasks separated by a comma
-        for t in $(comma_split_tasks "$NEW_TASK_NAME"); do
-            insert_pipeline_task $PIPELINE_FILE $t "$BEFORE_TASK_NAME"
-        done
+        insert_multiple_pipeline_tasks "$PIPELINE_FILE" "$NEW_TASK_NAME_OR_NAMES" "$BEFORE_TASK_NAME"
         show_diff $PIPELINE_FILE
         ;;
 
     "patch-all")
         required_args 3
         GIT_REPO_PATH="$2"
-        NEW_TASK_NAME="$3"
+        NEW_TASK_NAME_OR_NAMES="$3"
         # The new task will be inserted before this task
         BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
 
         for p in $(find_pipelines $GIT_REPO_PATH); do
-            # Support multiple tasks separated by a comma
-            for t in $(comma_split_tasks "$NEW_TASK_NAME"); do
-                insert_pipeline_task "$GIT_REPO_PATH/$p" $t "$BEFORE_TASK_NAME"
-            done
+            insert_multiple_pipeline_tasks "$GIT_REPO_PATH/$p" "$NEW_TASK_NAME_OR_NAMES" "$BEFORE_TASK_NAME"
         done
         show_diff "$GIT_REPO_PATH/.tekton" --stat
         ;;
