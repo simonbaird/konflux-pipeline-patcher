@@ -51,5 +51,6 @@ It's functional, but should be considered a POC/demo at this stage.
 
 ## See also
 
+* [One-liners for specific Red Hat Konflux use cases](specific-one-liners.md)
 * <https://github.com/konflux-ci/build-definitions/>
 * <https://gitlab.cee.redhat.com/ynanavat/generate-bulk-tekton-prs/>
