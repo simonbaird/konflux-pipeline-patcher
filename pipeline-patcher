@@ -206,6 +206,7 @@ insert_pipeline_task() {
         if [[ ! $new_task_name =~ -oci-ta$ ]]; then
             echo "Looks like your pipeline is oci-ta. Consider if there's an oci-ta version of this task you should use instead."
             # But continue, since it might be fine. Not all tasks in an oci-ta pipeline use the trusted artifacts.
+            # Todo maybe: See if there is a related -oci-ta task and if there is just use it automatically
         fi
     fi
 
