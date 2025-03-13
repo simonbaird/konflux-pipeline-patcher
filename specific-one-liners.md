@@ -12,14 +12,16 @@ free to [install the pipeline-patcher script](README.md) and run the
 
 These two tasks will become required tasks for Red Hat Konflux builds after
 March 31, 2025. See also [this
-announcement](https://groups.google.com/a/redhat.com/g/konflux-announce/c/OEcuK1Sr7dI/m/xKwD_bMcAQAJ).
+announcement](https://groups.google.com/a/redhat.com/g/konflux-announce/c/OEcuK1Sr7dI/m/xKwD_bMcAQAJ),
+and [KONFLUX-2264](https://issues.redhat.com/browse/KONFLUX-2264).
 
 ### For pipelines using the trusted artifacts/oci-ta tasks
 
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
   bash -s patch-all . sast-shell-check-oci-ta,sast-unicode-check-oci-ta &&
-  git commit .tekton/*.yaml -m "Add shell and unicode sast pipeline tasks"
+  git commit .tekton/*.yaml -m "Add shell and unicode sast pipeline tasks" \
+    -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```
 
 ### For pipelines not using trusted artifacts
@@ -27,7 +29,8 @@ curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipelin
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
   bash -s patch-all . sast-shell-check,sast-unicode-check &&
-  git commit .tekton/*.yaml -m "Add shell and unicode sast pipeline tasks"
+  git commit .tekton/*.yaml -m "Add shell and unicode sast pipeline tasks" \
+    -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```
 
 ## SAST Coverity Check tasks
@@ -45,7 +48,8 @@ pipeline.
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
   bash -s patch-all . sast-coverity-check-oci-ta,coverity-availability-check &&
-  git commit .tekton/*.yaml -m "Add sast coverity pipeline task"
+  git commit .tekton/*.yaml -m "Add sast coverity pipeline task" \
+    -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```
 
 ### For pipelines not using trusted artifacts
@@ -53,5 +57,6 @@ curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipelin
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
   bash -s patch-all . sast-coverity-check,coverity-availability-check &&
-  git commit .tekton/*.yaml -m "Add sast coverity pipeline task"
+  git commit .tekton/*.yaml -m "Add sast coverity pipeline task" \
+    -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```
