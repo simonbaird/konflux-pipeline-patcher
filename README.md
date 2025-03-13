@@ -43,7 +43,7 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 ## Status
 
-It's functional, but should be considered a POC/demo at this stage.
+It's functional, but very new, and lacking in CI. There might be unexpected bugs.
 
 ## Demo
 
