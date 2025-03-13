@@ -303,6 +303,8 @@ ${0} list-tasks
 
 # Show the latest trusted bundle ref for given pipeline task
 ${0} task-ref <task-name> <version>
+${0} task-ref <task-name>:<version>
+${0} task-ref <task-bundle-ref>
 
 # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
 ${0} task-yaml <task-name>
@@ -354,9 +356,28 @@ case "$MAIN_CMD" in
         ;;
 
     "task-ref")
-        required_args 3
-        TASK_NAME="$2"
-        VERSION="$3"
+        required_args 2
+        RAW_TASK_REF="$2"
+
+        # Remove oci:// prefix if it is present
+        TASK_REF="${RAW_TASK_REF#oci://}"
+
+        # Is there still a ":" char?
+        if [[ "$TASK_REF" =~ : ]]; then
+            # Assume the name and tag are together with a colon between them
+            TASK_NAME="${TASK_REF%%:*}"
+            VERSION="${TASK_REF#*:}"
+
+            # Do some extra work so it behaves usefully if a full bundle ref
+            # is given. Strip quay repo prefix, and sha256 digest suffix
+            TASK_NAME="${TASK_NAME#$KONFLUX_CATALOG/task-}"
+            VERSION="${VERSION%@sha256:*}"
+        else
+            # The version tag must be specified
+            required_args 3
+            TASK_NAME="$RAW_TASK_REF"
+            VERSION="$3"
+        fi
 
         # Todo maybe: List all the versions if version is not specified
         get_pinned_task_bundle_ref "$TASK_NAME" "$VERSION"
