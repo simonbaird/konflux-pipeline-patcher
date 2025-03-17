@@ -198,7 +198,7 @@ insert_pipeline_task() {
     fi
 
     if ! detect_oci_ta_pipeline $pipeline_file; then
-        if [[ ! $new_task_name =~ -oci-ta$ ]]; then
+        if [[ $new_task_name =~ -oci-ta$ ]]; then
             echo "Adding an oci-ta task to a non-oci-ta pipeline is probably a mistake. Skipping."
             return
         fi
