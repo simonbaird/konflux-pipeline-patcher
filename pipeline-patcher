@@ -355,6 +355,23 @@ case "$MAIN_CMD" in
         list_known_tasks
         ;;
 
+    # Search for tasks in the trusted task list
+    "trusted-task-lookup")
+        SEARCH_OPT="${2:-""}"
+        case $SEARCH_OPT in
+            "--raw")
+                # Show everything
+                TRUSTED_TASKS_FILTER="."
+                ;;
+            *)
+                # Show just Tekton task bundles that match $SEARCH_OPT,
+                # or show all of them if $SEARCH_OPT is an empty string
+                TRUSTED_TASKS_FILTER="with_entries(select(.key | test(\"^oci://$KONFLUX_CATALOG/task-.*$SEARCH_OPT\")))"
+                ;;
+        esac
+        trusted_task_data | yq ".trusted_tasks | $TRUSTED_TASKS_FILTER"
+        ;;
+
     "task-ref")
         required_args 2
         RAW_TASK_REF="$2"
