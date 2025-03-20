@@ -93,10 +93,20 @@ extract_pipeline_task_raw_yaml() {
 
 # Show a list of tasks that we could get yaml snippets for.
 # Include the task's version in the output.
-list_known_tasks() {
+_fetch_known_tasks() {
     for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML $PIPELINE_YAML_FBC; do
         curl -s "$p" | yq '.spec.tasks[].taskRef | (.name + " " + .version)' ;
-    done | sort | uniq
+    done | sort -u
+}
+
+# A memoized version of the above so we can refer to this list
+# more than once without needing to refetch it
+_known_tasks_memo=""
+list_known_tasks() {
+    if [[ -z "$_known_tasks_memo" ]]; then
+        _known_tasks_memo=$(_fetch_known_tasks)
+    fi
+    echo "$_known_tasks_memo"
 }
 
 # Put together a yaml snippet with a bundle resolved taskRef ready to insert
