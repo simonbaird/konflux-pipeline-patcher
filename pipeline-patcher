@@ -349,6 +349,28 @@ required_args() {
 MAIN_CMD="${1:-""}"
 ARG_COUNT="$#"
 
+check_dependency() {
+    local dependencies="$@"
+    for d in $dependencies; do
+        if ! which "$d" > /dev/null 2>&1; then
+            echo "Can't find required dependency '$d' in path. Aborting."
+            exit 1
+        fi
+
+        case $d in
+            "yq")
+                if ! yq --version 2>&1 | grep -q 'mikefarah/yq'; then
+                    echo "It looks like you have the wrong version of yq installed. Aborting."
+                    echo "Please install yq from https://github.com/mikefarah/yq/releases/latest"
+                    exit 1
+                fi
+                ;;
+        esac
+    done
+}
+
+check_dependency curl awk jq git yq oras
+
 # Main command handler
 case "$MAIN_CMD" in
     "list-tasks")
