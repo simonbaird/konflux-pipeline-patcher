@@ -35,8 +35,6 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 ## Requirements
 
-Except for yq, these should all be installable with dnf.
-
 * bash
 * curl
 * awk
