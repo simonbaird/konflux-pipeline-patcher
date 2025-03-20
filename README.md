@@ -35,13 +35,16 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 ## Requirements
 
+Except for yq, these should all be installable with dnf.
+
 * bash
 * curl
 * awk
 * jq
 * git
-* [yq](https://github.com/mikefarah/yq/releases/latest)
 * [oras](https://github.com/oras-project/oras/releases/latest)
+* [yq](https://github.com/mikefarah/yq/releases/latest)
+  ([mikefarah](https://github.com/mikefarah/yq/) not [PyPi](https://pypi.org/project/yq/))
 
 ## Status
 
