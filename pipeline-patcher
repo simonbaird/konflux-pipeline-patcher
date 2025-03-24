@@ -387,6 +387,10 @@ ${0} task-ref <task-name> <version>
 ${0} task-ref <task-name>:<version>
 ${0} task-ref <task-bundle-ref>
 
+# Lookup tasks in the trusted task data and output all the known
+# bundle digests and their related dates
+${0} trusted-task-lookup [<task-name-or-substring>]
+
 # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
 ${0} task-yaml <task-name>
 
