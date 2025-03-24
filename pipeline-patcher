@@ -9,12 +9,22 @@ indented() {
 }
 
 # Extract trusted task data from the acceptable bundles data bundle
-trusted_task_data() {
+_trusted_task_data() {
     local acceptable_bundles_repo="$KONFLUX_CATALOG/data-acceptable-bundles"
 
     local blob_digest=$(oras manifest fetch "$acceptable_bundles_repo:latest" | jq -r '.layers[0].digest')
 
     oras blob fetch "$acceptable_bundles_repo@$blob_digest" --output -
+}
+
+# Cache it so we aren't doing the expensive blob fetch multiple times
+_trusted_task_cache=$(mktemp)
+trap "rm -f $_trusted_task_cache" EXIT
+trusted_task_data() {
+    if [[ ! -s $_trusted_task_cache ]]; then
+        _trusted_task_data > $_trusted_task_cache
+    fi
+    cat $_trusted_task_cache
 }
 
 # Find the digest and full image ref for a given task bundle
