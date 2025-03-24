@@ -6,7 +6,7 @@ create a PR in the usual way.
 
 Of course you don't have to run the script directly from curl. Feel
 free to [install the pipeline-patcher script](README.md) and run the
-`pipeline-patcher patch-all` commands locally.
+`pipeline-patcher add-tasks` commands locally.
 
 ## SAST Unicode and Shell Check tasks
 
@@ -17,7 +17,7 @@ and [KONFLUX-2264](https://issues.redhat.com/browse/KONFLUX-2264).
 
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
-  bash -s patch-all . sast-shell-check,sast-unicode-check &&
+  bash -s add-tasks . sast-shell-check,sast-unicode-check &&
   git commit .tekton/*.yaml -m "Add shell and unicode sast pipeline tasks" \
     -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```
@@ -30,7 +30,7 @@ for details.
 
 ```bash
 curl -sL https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeline-patcher |
-  bash -s patch-all . sast-coverity-check,coverity-availability-check &&
+  bash -s add-tasks . sast-coverity-check,coverity-availability-check &&
   git commit .tekton/*.yaml -m "Add sast coverity pipeline task" \
     -m "https://issues.redhat.com/browse/KONFLUX-2264"
 ```

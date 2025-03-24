@@ -400,7 +400,7 @@ ${0} patch <path-to-pipeline-yaml> <new-task-name>
 
 # Modify all the Konflux pipelines in a git repo to add a new task
 # Supports multiple comma-separated task names
-${0} patch-all <path-to-git-repo> <new-task-name>
+${0} add-tasks <path-to-git-repo> <new-task-name>
 
 # Update task bundle references in your pipeline definitions to the latest
 # newest digests from the trusted task list. (Manually perform the kind of
@@ -520,7 +520,7 @@ case "$MAIN_CMD" in
         show_diff $PIPELINE_FILE
         ;;
 
-    "patch-all")
+    "add-tasks"|"patch-all")
         required_args 3
         GIT_REPO_PATH="$2"
         NEW_TASK_NAME_OR_NAMES="$3"
