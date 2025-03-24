@@ -358,6 +358,24 @@ find_pipelines() {
     ( cd $git_repo_path && git grep -l 'kind: PipelineRun' .tekton/*.yaml )
 }
 
+bump_task_refs() {
+    local git_repo_path="$1"
+
+    local tekton_yaml="$git_repo_path/.tekton/*.yaml"
+    local yq_query='... | select(has("resolver")) | .params // [] | .[] | select(.name == "bundle") | .value'
+    local task_bundle_refs=$(yq "$yq_query" $tekton_yaml | grep -v -- '---' | sort -u)
+
+    for ref in $task_bundle_refs; do
+        echo -n "${ref%@*}"
+        new_ref=$(get_pinned_task_bundle_ref $ref)
+        if [[ $ref != $new_ref ]]; then
+            sed -e "s!$ref!$new_ref!" -i $tekton_yaml
+            echo -n " updated to ${new_ref#*@}"
+        fi
+        echo
+    done
+}
+
 # Just the usage part of the help
 usage() {
     cat <<EOT
@@ -379,6 +397,11 @@ ${0} patch <path-to-pipeline-yaml> <new-task-name>
 # Modify all the Konflux pipelines in a git repo to add a new task
 # Supports multiple comma-separated task names
 ${0} patch-all <path-to-git-repo> <new-task-name>
+
+# Update task bundle references in your pipeline definitions to the latest
+# newest digests from the trusted task list. (Manually perform the kind of
+# update usually done by MintMaker or Renovate.)
+${0} bump-task-refs <path-to-git-repo>
 
 # Show this help
 ${0} help
@@ -504,6 +527,13 @@ case "$MAIN_CMD" in
             insert_multiple_pipeline_tasks "$GIT_REPO_PATH/$p" "$NEW_TASK_NAME_OR_NAMES" "$BEFORE_TASK_NAME"
         done
         show_diff "$GIT_REPO_PATH/.tekton" --stat
+        ;;
+
+    "bump-task-refs")
+        required_args 2
+        check_dependency sed
+        GIT_REPO_PATH="$2"
+        bump_task_refs "$GIT_REPO_PATH"
         ;;
 
     # For convenience since this can go directly into the readme

@@ -38,6 +38,7 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 * bash
 * curl
 * awk
+* sed
 * jq
 * git
 * [oras](https://github.com/oras-project/oras/releases/latest)
