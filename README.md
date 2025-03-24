@@ -17,6 +17,12 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 # Show the latest trusted bundle ref for given pipeline task
 ./pipeline-patcher task-ref <task-name> <version>
+./pipeline-patcher task-ref <task-name>:<version>
+./pipeline-patcher task-ref <task-bundle-ref>
+
+# Lookup tasks in the trusted task data and output all the known
+# bundle digests and their related dates
+./pipeline-patcher trusted-task-lookup [<task-name-or-substring>]
 
 # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
 ./pipeline-patcher task-yaml <task-name>
@@ -27,7 +33,12 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 # Modify all the Konflux pipelines in a git repo to add a new task
 # Supports multiple comma-separated task names
-./pipeline-patcher patch-all <path-to-git-repo> <new-task-name>
+./pipeline-patcher add-tasks <path-to-git-repo> <new-task-name>
+
+# Update task bundle references in your pipeline definitions to the latest
+# newest digests from the trusted task list. (Manually perform the kind of
+# update usually done by MintMaker or Renovate.)
+./pipeline-patcher bump-task-refs <path-to-git-repo>
 
 # Show this help
 ./pipeline-patcher help
