@@ -545,8 +545,15 @@ case "$MAIN_CMD" in
         usage
         ;;
 
-    "help" | *)
+    "help")
         show_help
+        ;;
+
+    *)
+        # Suppress output for shellspec Include
+        if [[ -z ${SHELLSPEC_ROOT:-""} ]]; then
+            show_help
+        fi
         ;;
 esac
 

@@ -58,7 +58,7 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 
 ## Status
 
-It's functional, but very new, and lacking in CI. There might be unexpected bugs.
+It's functional, but quite new. There might be unexpected bugs.
 
 ## Demo
 

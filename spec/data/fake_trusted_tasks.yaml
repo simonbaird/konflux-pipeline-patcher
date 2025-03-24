@@ -1,0 +1,4 @@
+---
+trusted_tasks:
+  oci://quay.io/konflux-ci/tekton-catalog/task-foo:0.1:
+  - ref: sha256:somesha
