@@ -20,8 +20,25 @@ trusted_task_data() {
 # Find the digest and full image ref for a given task bundle
 # Use the acceptable bundles data bundle
 get_pinned_task_bundle_ref() {
-    local task_name=$1
-    local tag=$2
+    local task_name_or_ref=$1
+    local tag_maybe=${2:-""}
+
+    # Do some extra work so it behaves usefully if $task_name_or_ref
+    # contains a full bundle ref. Strip off the quay repo prefix...
+    task_name_or_ref="${task_name_or_ref#$KONFLUX_CATALOG/task-}"
+    # ...and also the sha256 digest suffix
+    task_name_or_ref="${task_name_or_ref%@sha256:*}"
+
+    if [[ "$task_name_or_ref" =~ : ]]; then
+        # Assume the name and tag are together with a colon between
+        # them, e.g. "some-task:0.2"
+        task_name="${task_name_or_ref%%:*}"
+        tag="${task_name_or_ref#*:}"
+    else
+        # Otherwise use the second argument as the tag
+        task_name=$task_name_or_ref
+        tag=$tag_maybe
+    fi
 
     local task_repo=$KONFLUX_CATALOG/task-$task_name
     local trusted_task_key="oci://$task_repo:$tag"
@@ -432,30 +449,20 @@ case "$MAIN_CMD" in
 
     "task-ref")
         required_args 2
-        RAW_TASK_REF="$2"
+        TASK_NAME_OR_REF="$2"
+        VERSION_MAYBE="${3:-""}"
 
         # Remove oci:// prefix if it is present
-        TASK_REF="${RAW_TASK_REF#oci://}"
+        TASK_NAME_OR_REF="${TASK_NAME_OR_REF#oci://}"
 
-        # Is there still a ":" char?
-        if [[ "$TASK_REF" =~ : ]]; then
-            # Assume the name and tag are together with a colon between them
-            TASK_NAME="${TASK_REF%%:*}"
-            VERSION="${TASK_REF#*:}"
-
-            # Do some extra work so it behaves usefully if a full bundle ref
-            # is given. Strip quay repo prefix, and sha256 digest suffix
-            TASK_NAME="${TASK_NAME#$KONFLUX_CATALOG/task-}"
-            VERSION="${VERSION%@sha256:*}"
-        else
-            # The version tag must be specified
+        # If there is still a ":" char then assume the version tag is after the ":".
+        # If there is no ":" char then required the version tag to be specified separately.
+        if [[ ! "$TASK_NAME_OR_REF" =~ : ]]; then
             required_args 3
-            TASK_NAME="$RAW_TASK_REF"
-            VERSION="$3"
         fi
 
         # Todo maybe: List all the versions if version is not specified
-        get_pinned_task_bundle_ref "$TASK_NAME" "$VERSION"
+        get_pinned_task_bundle_ref "$TASK_NAME_OR_REF" "$VERSION_MAYBE"
         ;;
 
     "task-yaml")
