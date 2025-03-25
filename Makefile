@@ -1,6 +1,6 @@
 
 test:
-	@shellspec
+	@bash shellspec
 
 SHELLSPEC_INSTALLER=https://github.com/shellspec/shellspec/raw/master/install.sh
 install-shellspec:
