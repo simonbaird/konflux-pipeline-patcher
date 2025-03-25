@@ -1,0 +1,24 @@
+---
+name: Tests
+
+"on":
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install oras
+        uses: oras-project/setup-oras@v1
+
+      - name: Install shellspec
+        run: make install-shellspec
+
+      - name: Run tests
+        run: make test
