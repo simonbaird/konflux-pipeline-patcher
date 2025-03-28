@@ -182,16 +182,16 @@ get_pipeline_kind() {
 }
 
 # Return a yq query that specifies where to find the tasks in the yaml pipeline file
-get_pipeline_tasks_path() {
+get_pipeline_spec_path() {
     local pipeline_file="$1"
 
     # So we can work with both a PipelineRun yaml file and a Pipeline yaml file
     case $(get_pipeline_kind $pipeline_file) in
         PipelineRun)
-            echo ".spec.pipelineSpec.tasks"
+            echo ".spec.pipelineSpec"
             ;;
         Pipeline)
-            echo ".spec.tasks"
+            echo ".spec"
             ;;
         *)
             echo "Unexpected kind found in $pipeline_file. Aborting."
@@ -199,6 +199,13 @@ get_pipeline_tasks_path() {
             ;;
     esac
 }
+# Return a yq query that specifies where to find the tasks in the yaml pipeline file
+get_pipeline_tasks_path() {
+    local pipeline_file="$1"
+
+    echo "$(get_pipeline_spec_path "$pipeline_file").tasks"
+}
+
 
 # Extract a named pipeline task from a pipeline definition
 find_task_in_pipeline() {
