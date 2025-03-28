@@ -206,6 +206,12 @@ get_pipeline_tasks_path() {
     echo "$(get_pipeline_spec_path "$pipeline_file").tasks"
 }
 
+# Return a yq query that specifies where to find the params in the yaml pipeline file
+get_pipeline_params_path() {
+    local pipeline_file="$1"
+
+    echo "$(get_pipeline_spec_path "$pipeline_file").params"
+}
 
 # Extract a named pipeline task from a pipeline definition
 find_task_in_pipeline() {
@@ -319,6 +325,11 @@ insert_pipeline_task() {
     if detect_build_image_index "$pipeline_file"; then
         # Prepare the yaml snippet to insert (use it as is)
         extract_pipeline_task "$new_task_name" > "$task_yaml_tmp"
+
+    elif [[ $new_task_name == "build-image-index" ]]; then
+        # If we're trying to add the build-image-index itself then leave it alone
+        extract_pipeline_task "$new_task_name" > "$task_yaml_tmp"
+
     else
         # Do some surgery on the yaml to (hopefully) support older pipelines where there
         # is no build-image-index task. We're assuming there is a build-container task.
@@ -415,6 +426,57 @@ bump_task_refs() {
     done
 }
 
+#--------------------------------------------------------------------
+# Hacky stuff for add-build-image-index
+modify_runafter() {
+    local pipeline_file="$1"
+    local old_task="$2"
+    local new_task="$3"
+
+    # Assume runAfter includes only one item, or at least the task to replace is first
+    # Replace "- $old_task" with "- $new_task" on the first line after the runAfter: key
+    awk "
+        /runAfter:/ { flag=1; print; next }
+        flag { sub(/- $old_task\$/, \"- $new_task\"); flag=0 }
+        { print }
+    " "$pipeline_file" > "$pipeline_file.tmp"
+
+    # Update the original file with the modified content
+    mv "$pipeline_file.tmp" "$pipeline_file"
+}
+
+modify_param_value_task() {
+    local pipeline_file="$1"
+    local old_task="$2"
+    local new_task="$3"
+    local task_attribute="$4"
+
+    # Replace "tasks.$old_task.$task_attribute" with "tasks.$new_task.$task_attribute"
+    awk "
+        { sub(/tasks\.$old_task\.$task_attribute/, \"tasks.$new_task.$task_attribute\"); print }
+    " "$pipeline_file" > "$pipeline_file.tmp"
+
+    # Update the original file with the modified content
+    mv "$pipeline_file.tmp" "$pipeline_file"
+}
+
+add_pipeline_param() {
+    local pipeline_file="$1"
+    local name="$2"
+    local description="$3"
+    local type="$4"
+    local default="$5"
+
+    local params_path=$(get_pipeline_params_path "$pipeline_file")
+
+    # I don't think it's practical to use awk here, so get ready for some
+    # yaml formatting changes. Todo: Avoid that somehow...
+    yq -i "$params_path += [
+        {\"name\":\"$name\", \"description\":\"$description\", \"type\":\"$type\", \"default\":\"$default\"}
+    ]" $pipeline_file
+}
+#--------------------------------------------------------------------
+
 # Just the usage part of the help
 usage() {
     cat <<EOT
@@ -447,6 +509,11 @@ ${0} add-tasks <path-to-git-repo> <new-task-name-or-names> [<before-task-name>]
 # newest digests from the trusted task list. (Manually perform the kind of
 # update usually done by MintMaker or Renovate.)
 ${0} bump-task-refs <path-to-git-repo>
+
+# Attempt to add the "build-image-index" task and make the required pipeline
+# migration changes so that it works as intended. Beware this is not well
+# tested. See https://issues.redhat.com/browse/EC-1202 for more details.
+${0} add-build-image-index <path-to-git-repo>
 
 # Show this help
 ${0} help
@@ -577,6 +644,22 @@ case "$MAIN_CMD" in
         check_dependency sed
         GIT_REPO_PATH="$2"
         bump_task_refs "$GIT_REPO_PATH"
+        ;;
+
+    # For pipelines that don't yet have the build-image-index task this should do
+    # most of the work to add it. YMMV. See https://issues.redhat.com/browse/EC-1202
+    "add-build-image-index")
+        required_args 2
+        GIT_REPO_PATH="$2"
+        for p in $(find_pipelines $GIT_REPO_PATH); do
+            full_path="$GIT_REPO_PATH/$p"
+            modify_runafter "$full_path" build-container build-image-index
+            modify_param_value_task "$full_path" build-container build-image-index results.IMAGE_URL
+            modify_param_value_task "$full_path" build-container build-image-index results.IMAGE_DIGEST
+            modify_param_value_task "$full_path" build-container build-image-index status
+            add_pipeline_param "$full_path" build-image-index "Add built image into an OCI image index" string false
+            insert_pipeline_task "$full_path" build-image-index source-build
+        done
         ;;
 
     # For convenience since this can go directly into the readme
