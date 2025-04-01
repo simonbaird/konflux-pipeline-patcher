@@ -236,7 +236,7 @@ detect_build_image_index() {
     detect_task_in_pipeline $pipeline_file "build-image-index"
 }
 
-DEFAULT_BEFORE_TASK_CANDIDATES="deprecated-image-check clamav-scan"
+DEFAULT_BEFORE_TASK_CANDIDATES="clamav-scan deprecated-image-check"
 
 default_before_task() {
     local pipeline_file="$1"
@@ -429,7 +429,7 @@ ${0} task-yaml <task-name>
 # Modify a single Konflux pipeline definition to add a new task
 # Supports multiple comma-separated task names
 # The <before-task-name> is used to specify where in the yaml file to add the new
-# task. If unset, 'deprecated-image-check' and 'clamav-scan' will be tried.
+# task. If unset, 'clamav-scan' and 'deprecated-image-check' will be tried.
 ${0} patch <path-to-pipeline-yaml> <new-task-name-or-names> [<before-task-name>]
 
 # Modify all the Konflux pipelines in a git repo to add a new task
