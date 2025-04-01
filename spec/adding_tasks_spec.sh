@@ -1,66 +1,9 @@
 # shellcheck shell=bash
 
-Describe 'command smoke test'
-  It 'shows help'
-    When run ./pipeline-patcher help
-    The status should be success
-    The stdout should include "Konflux Pipeline Patcher"
-    The stdout should include "Usage:"
-  End
-
-  It 'lists tasks'
-    # Beware this pulls data from github
-    When run ./pipeline-patcher list-tasks
-    The status should be success
-    The stdout line 1 should eq "apply-tags 0.1"
-    The stdout should include "git-clone "
-    The stdout should include "clair-scan "
-  End
-
-  It 'shows task yaml'
-    # Beware this pulls data from github
-    When run ./pipeline-patcher task-yaml git-clone
-    The status should be success
-    # Just a sanity check
-    The stdout line 1 should eq "- name: clone-repository"
-    The stdout should include "        value: quay.io/konflux-ci/tekton-catalog/task-git-clone:"
-    The stdout should include "    resolver: bundles"
-  End
-End
-
-Describe 'misc helpers'
-  Include ./pipeline-patcher
-
-  It 'indents'
-    indent_test() {
-      printf "some\ntext" | indented
-    }
-    When call indent_test
-    The status should be success
-    The output should equal "$(printf "  some\n  text")"
-  End
-End
-
-Describe 'task-refs'
-  Include ./pipeline-patcher
-
-  Parameters
-    "foo:0.1"
-    "quay.io/konflux-ci/tekton-catalog/task-foo:0.1"
-    "quay.io/konflux-ci/tekton-catalog/task-foo:0.1@sha256:whatever"
-    "foo" "0.1"
-  End
-
-  It 'produces task refs'
-    trusted_task_data() {
-      cat ./spec/data/fake_trusted_tasks.yaml
-    }
-    When call get_pinned_task_bundle_ref "$1" ${2:-""}
-    The status should be success
-    The stdout should equal "quay.io/konflux-ci/tekton-catalog/task-foo:0.1@sha256:somesha"
-  End
-End
-
+#
+# Make a git repo with some real pipelines in it, add tasks to those pipelines,
+# check that it succeeds, and that diff looks correct
+#
 Describe 'add-tasks'
   # Prepare a git repo for testing
   # Todo: Move this into a helper..?
@@ -96,9 +39,11 @@ Adding task sast-unicode-check-oci-ta to pipeline $tmp_dir/.tekton/cli-v06-push.
   End
 End
 
-Describe 'add-tasks-with-build-container'
-  # Prepare a git repo for testing
-  # Todo: Move this into a helper..?
+#
+# The same as the above except that the pipelines are older and do not have the
+# build-image-index task
+#
+Describe 'add-tasks with build-container instead of build-image-index'
   tmp_dir=$(mktemp -d)
   trap "rm -rf $tmp_dir" EXIT
   (
@@ -135,22 +80,5 @@ Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-i
     The value "$(show_diff)" should include '+        - build-container'
 
     # Todo maybe: Make a baseline file and check that it matches exactly
-  End
-End
-
-Describe 'default before task'
-  Include ./pipeline-patcher
-
-  Parameters
-    "zip zap" "zip" # finds first option
-    "zup zap" "zap" # finds second option
-    "zup zop" "zop" # finds none but uses last option anyway
-  End
-
-  It 'works as expected'
-    DEFAULT_BEFORE_TASK_CANDIDATES="$1"
-    When call default_before_task ./spec/data/fake_pipeline_run.yaml
-    The status should be success
-    The output should equal "$2"
   End
 End
