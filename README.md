@@ -27,13 +27,15 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 # Output a snippet of yaml suitable for adding a task to a Konflux pipeline
 ./pipeline-patcher task-yaml <task-name>
 
-# Modify a Konflux pipeline definition to add a new task
+# Modify a single Konflux pipeline definition to add a new task
 # Supports multiple comma-separated task names
-./pipeline-patcher patch <path-to-pipeline-yaml> <new-task-name>
+# The <before-task-name> is used to specify where in the yaml file to add the new
+# task. If unset, 'clamav-scan' and 'deprecated-image-check' will be tried.
+./pipeline-patcher patch <path-to-pipeline-yaml> <new-task-name-or-names> [<before-task-name>]
 
 # Modify all the Konflux pipelines in a git repo to add a new task
-# Supports multiple comma-separated task names
-./pipeline-patcher add-tasks <path-to-git-repo> <new-task-name>
+# Supports multiple comma-separated task names. (See above re <before-task-name>).
+./pipeline-patcher add-tasks <path-to-git-repo> <new-task-name-or-names> [<before-task-name>]
 
 # Update task bundle references in your pipeline definitions to the latest
 # newest digests from the trusted task list. (Manually perform the kind of
