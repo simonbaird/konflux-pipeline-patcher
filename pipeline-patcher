@@ -236,6 +236,24 @@ detect_build_image_index() {
     detect_task_in_pipeline $pipeline_file "build-image-index"
 }
 
+DEFAULT_BEFORE_TASK_CANDIDATES="deprecated-image-check clamav-scan"
+
+default_before_task() {
+    local pipeline_file="$1"
+
+    for candidate in $DEFAULT_BEFORE_TASK_CANDIDATES; do
+        # Note: We detect the task using the name from the taskRef but it
+        # would be more intuitive if this used the local pipeline task name
+        # since that is used when inserting the task. Fix later maybe.
+        if detect_task_in_pipeline "$pipeline_file" "$candidate"; then
+            break
+        fi
+    done
+
+    # Even if it wasn't found we still return the last option
+    echo "$candidate"
+}
+
 # Create the yaml snippet for a particular pipeline task and insert it into a pipeline
 # definition right before a particular other task. Do a few sanity checks beforehand.
 insert_pipeline_task() {
@@ -411,8 +429,7 @@ ${0} task-yaml <task-name>
 # Modify a single Konflux pipeline definition to add a new task
 # Supports multiple comma-separated task names
 # The <before-task-name> is used to specify where in the yaml file to add the new
-# task. The default value for <before-task-name> is 'deprecated-image-check'. If
-# you don't have that task, 'clamav-scan' is probably a good alternative.
+# task. If unset, 'deprecated-image-check' and 'clamav-scan' will be tried.
 ${0} patch <path-to-pipeline-yaml> <new-task-name-or-names> [<before-task-name>]
 
 # Modify all the Konflux pipelines in a git repo to add a new task
@@ -530,8 +547,7 @@ case "$MAIN_CMD" in
         required_args 3
         PIPELINE_FILE="$2"
         NEW_TASK_NAME_OR_NAMES="$3"
-        # The new task will be inserted before this task
-        BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
+        BEFORE_TASK_NAME="${4:-$(default_before_task "$PIPELINE_FILE")}"
 
         insert_multiple_pipeline_tasks "$PIPELINE_FILE" "$NEW_TASK_NAME_OR_NAMES" "$BEFORE_TASK_NAME"
         show_diff $PIPELINE_FILE
@@ -541,10 +557,9 @@ case "$MAIN_CMD" in
         required_args 3
         GIT_REPO_PATH="$2"
         NEW_TASK_NAME_OR_NAMES="$3"
-        # The new task will be inserted before this task
-        BEFORE_TASK_NAME="${4:-"deprecated-image-check"}"
 
         for p in $(find_pipelines $GIT_REPO_PATH); do
+            BEFORE_TASK_NAME="${4:-$(default_before_task "$GIT_REPO_PATH/$p")}"
             insert_multiple_pipeline_tasks "$GIT_REPO_PATH/$p" "$NEW_TASK_NAME_OR_NAMES" "$BEFORE_TASK_NAME"
         done
         show_diff "$GIT_REPO_PATH/.tekton" --stat

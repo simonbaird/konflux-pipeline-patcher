@@ -137,3 +137,20 @@ Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-i
     # Todo maybe: Make a baseline file and check that it matches exactly
   End
 End
+
+Describe 'default before task'
+  Include ./pipeline-patcher
+
+  Parameters
+    "zip zap" "zip" # finds first option
+    "zup zap" "zap" # finds second option
+    "zup zop" "zop" # finds none but uses last option anyway
+  End
+
+  It 'works as expected'
+    DEFAULT_BEFORE_TASK_CANDIDATES="$1"
+    When call default_before_task ./spec/data/fake_pipeline_run.yaml
+    The status should be success
+    The output should equal "$2"
+  End
+End

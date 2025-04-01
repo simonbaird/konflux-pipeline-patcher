@@ -1,0 +1,20 @@
+---
+kind: PipelineRun
+spec:
+  pipelineSpec:
+    tasks:
+      - name: zip
+        taskRef:
+          params:
+          - name: name
+            value: zip
+      - name: zap
+        taskRef:
+          params:
+          - name: name
+            value: zap
+      - name: foo
+        taskRef:
+          params:
+          - name: name
+            value: foo
