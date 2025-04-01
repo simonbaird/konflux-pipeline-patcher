@@ -42,6 +42,11 @@ curl -sLO https://github.com/simonbaird/konflux-pipeline-patcher/raw/main/pipeli
 # update usually done by MintMaker or Renovate.)
 ./pipeline-patcher bump-task-refs <path-to-git-repo>
 
+# Attempt to add the "build-image-index" task and make the required pipeline
+# migration changes so that it works as intended. Beware this is not well
+# tested. See https://issues.redhat.com/browse/EC-1202 for more details.
+./pipeline-patcher add-build-image-index <path-to-git-repo>
+
 # Show this help
 ./pipeline-patcher help
 ```

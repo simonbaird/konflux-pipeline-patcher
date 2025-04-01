@@ -82,3 +82,44 @@ Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-i
     # Todo maybe: Make a baseline file and check that it matches exactly
   End
 End
+
+#
+# Use the experimental add-build-image-index command to upgrade the
+# pipeline to include the build-image-index task and make some related
+# changes so it works correctly.
+#
+Describe 'migrates the pipeline to include build-image-index'
+  tmp_dir=$(mktemp -d)
+  trap "rm -rf $tmp_dir" EXIT
+  (
+    example_from_github="https://raw.githubusercontent.com/konflux-ci/mintmaker-renovate-image/9ca00ff4e7d87cfb768a2b6eff0185e9b8c8745f"
+    cd $tmp_dir && git init . && mkdir .tekton && cd .tekton
+    for y in push pull-request; do curl -sLO $example_from_github/.tekton/mintmaker-renovate-image-$y.yaml; done
+    git add * && git commit -m "Testing"
+  ) > /dev/null
+
+  show_diff() {
+    cd $tmp_dir && git diff -b
+  }
+
+  It 'migrates pipeline'
+    # Beware this pulls data from both github and quay
+    When run ./pipeline-patcher add-build-image-index $tmp_dir
+    The status should be success
+
+    The output should equal "Adding task build-image-index to pipeline $tmp_dir/.tekton/mintmaker-renovate-image-pull-request.yaml
+Adding task build-image-index to pipeline $tmp_dir/.tekton/mintmaker-renovate-image-push.yaml"
+
+    The value "$(show_diff)" should include "+      - name: build-image-index"
+
+    The value "$(show_diff)" should include "+              value: quay.io/konflux-ci/tekton-catalog/task-build-image-index:"
+
+    The value "$(show_diff)" should include "-        value: \$(tasks.build-container.results.IMAGE_URL)
++            value: \$(tasks.build-image-index.results.IMAGE_URL)"
+
+    The value "$(show_diff)" should include "runAfter:
+-        - build-container
++          - build-image-index"
+
+  End
+End
