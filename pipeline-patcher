@@ -640,9 +640,8 @@ case "$MAIN_CMD" in
         ;;
 
     "bump-task-refs")
-        required_args 2
         check_dependency sed
-        GIT_REPO_PATH="$2"
+        GIT_REPO_PATH="${2:-"."}"
         bump_task_refs "$GIT_REPO_PATH"
         ;;
 
