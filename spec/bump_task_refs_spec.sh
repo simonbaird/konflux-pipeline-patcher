@@ -8,7 +8,7 @@ Describe 'bump-task-refs'
     mkdir $tmp_dir/.tekton
     cp spec/data/fake_pipeline_run.yaml $tmp_dir/.tekton
     cd $tmp_dir && git init . && git add .tekton/* && git commit -m "Testing"
-  )
+  ) > /dev/null
 
   show_diff() {
     cd $tmp_dir && git diff

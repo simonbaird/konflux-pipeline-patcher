@@ -98,6 +98,10 @@ PIPELINE_YAML_OCI_TA=${BUILD_DEFS_URL}/pipelines/docker-build-oci-ta/docker-buil
 # The FBC pipeline has FBC specific tasks not found in the docker-build pipeline
 PIPELINE_YAML_FBC=${BUILD_DEFS_URL}/pipelines/fbc-builder/fbc-builder.yaml
 
+# For the tkn-bundle task which is not in either of the above
+PIPELINE_YAML_TKN_BUNDLE=${BUILD_DEFS_URL}/pipelines/tekton-bundle-builder/tekton-bundle-builder.yaml
+PIPELINE_YAML_TKN_BUNDLE_OCI_TA=${BUILD_DEFS_URL}/pipelines/tekton-bundle-builder-oci-ta/tekton-bundle-builder-oci-ta.yaml
+
 # Find the task in the pipeline definition from build-definitions repo
 # and extract its yaml snippet
 extract_pipeline_task_raw_yaml() {
@@ -108,8 +112,16 @@ extract_pipeline_task_raw_yaml() {
     # Set pipeline_url manually here if you need to.)
     if [[ "${task_name}" =~ ^fbc-|-fbc$ ]]; then
         local pipeline_url=${PIPELINE_YAML_FBC}
+
+    elif [[ "${task_name}" = "tkn-bundle" ]]; then
+        local pipeline_url=${PIPELINE_YAML_TKN_BUNDLE}
+
+    elif [[ "${task_name}" = "tkn-bundle-oci-ta" ]]; then
+        local pipeline_url=${PIPELINE_YAML_TKN_BUNDLE_OCI_TA}
+
     elif [[ "${task_name}" =~ -oci-ta ]]; then
         local pipeline_url=${PIPELINE_YAML_OCI_TA}
+
     else
         local pipeline_url=${PIPELINE_YAML}
     fi
@@ -121,7 +133,7 @@ extract_pipeline_task_raw_yaml() {
 # Show a list of tasks that we could get yaml snippets for.
 # Include the task's version in the output.
 _fetch_known_tasks() {
-    for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML $PIPELINE_YAML_FBC; do
+    for p in $PIPELINE_YAML_OCI_TA $PIPELINE_YAML $PIPELINE_YAML_FBC $PIPELINE_YAML_TKN_BUNDLE_OCI_TA $PIPELINE_YAML_TKN_BUNDLE; do
         curl -s "$p" | yq '.spec.tasks[].taskRef | (.name + " " + .version)' ;
     done | sort -u
 }

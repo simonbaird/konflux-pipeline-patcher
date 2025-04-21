@@ -25,4 +25,12 @@ Describe 'command smoke test'
     The stdout should include "        value: quay.io/konflux-ci/tekton-catalog/task-git-clone:"
     The stdout should include "    resolver: bundles"
   End
+
+  It 'shows task yaml for tkn-bundle task'
+    # Beware this pulls data from github
+    When run ./pipeline-patcher task-yaml tkn-bundle-oci-ta
+    The status should be success
+    The stdout line 1 should eq "- name: build-container"
+    The stdout should include "        value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0."
+  End
 End
