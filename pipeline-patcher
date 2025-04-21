@@ -420,6 +420,12 @@ find_pipelines() {
     ( cd $git_repo_path && git grep -l 'kind: PipelineRun' .tekton/*.yaml )
 }
 
+find_any_tekton_yaml() {
+    local git_repo_path="$1"
+
+    ( cd $git_repo_path && find .tekton -type f -name '*.yaml' )
+}
+
 bump_task_refs() {
     local git_repo_path="$1"
 
@@ -436,6 +442,13 @@ bump_task_refs() {
         fi
         echo
     done
+}
+
+# Run a yaml file through yq to get canonical formatting
+yq_format_yaml() {
+    local pipeline_file="$1"
+
+    yq -i . "$pipeline_file"
 }
 
 #--------------------------------------------------------------------
@@ -655,6 +668,15 @@ case "$MAIN_CMD" in
         check_dependency sed
         GIT_REPO_PATH="${2:-"."}"
         bump_task_refs "$GIT_REPO_PATH"
+        ;;
+
+    # In cases where this script introduces yaml formatting changes, this can be used to
+    # keep formatting changes in one commit separate from the actual significant changes
+    "format-yaml")
+        GIT_REPO_PATH="${2:-"."}"
+        for p in $(find_any_tekton_yaml $GIT_REPO_PATH); do
+            yq_format_yaml "$GIT_REPO_PATH/$p"
+        done
         ;;
 
     # For pipelines that don't yet have the build-image-index task this should do

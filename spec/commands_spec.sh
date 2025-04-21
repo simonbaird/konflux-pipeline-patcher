@@ -33,4 +33,20 @@ Describe 'command smoke test'
     The stdout line 1 should eq "- name: build-container"
     The stdout should include "        value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0."
   End
+
+  It 'formats yaml'
+    tmp_dir=$(mktemp -d)
+    trap "rm -rf $tmp_dir" EXIT
+
+    before=$(printf "foo:\n- 2\n- 3\n")
+    after=$(printf "foo:\n  - 2\n  - 3\n")
+
+    mkdir $tmp_dir/.tekton
+    echo "$before" > $tmp_dir/.tekton/spam.yaml
+
+    When run ./pipeline-patcher format-yaml $tmp_dir
+    The status should be success
+    The stdout should eq ""
+    The value "$(cat "$tmp_dir/.tekton/spam.yaml")" should eq "$after"
+  End
 End
