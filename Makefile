@@ -10,3 +10,9 @@ install-shellspec:
 
 test:
 	@GIT_CONFIG_GLOBAL="$(GIT_CONF)" bash shellspec
+
+# For faster hacking, run just the spec files with changes since the last commit
+quick-test:
+	@for spec in $$(git diff --name-only HEAD^ -- spec/*_spec.sh); do \
+	  GIT_CONFIG_GLOBAL="$(GIT_CONF)" bash shellspec "$$spec"; \
+	done
