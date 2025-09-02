@@ -52,6 +52,7 @@ get_pinned_task_bundle_ref() {
     # Do some extra work so it behaves usefully if $task_name_or_ref
     # contains a full bundle ref. Strip off the quay repo prefix...
     task_name_or_ref="${task_name_or_ref#$KONFLUX_CATALOG/task-}"
+    task_name_or_ref="${task_name_or_ref#$VANGUARD_CATALOG/task-}"
     # ...and also the sha256 digest suffix
     task_name_or_ref="${task_name_or_ref%@sha256:*}"
 
@@ -66,7 +67,20 @@ get_pinned_task_bundle_ref() {
         tag=$tag_maybe
     fi
 
-    local task_repo=$KONFLUX_CATALOG/task-$task_name
+    # I can't think of a good way to guess or assume which "catalog" the task is in,
+    # but I know this one task is now in the other location for now at least. This is
+    # a temporary hack I guess.
+    local catalog
+    case $task_name in
+        rpms-signature-scan)
+            catalog=$VANGUARD_CATALOG
+            ;;
+        *)
+            catalog=$KONFLUX_CATALOG
+            ;;
+    esac
+
+    local task_repo=$catalog/task-$task_name
     local trusted_task_key="oci://$task_repo:$tag"
 
     # Assume the first one is is the newest and best

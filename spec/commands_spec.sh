@@ -34,11 +34,23 @@ Describe 'command smoke test'
     The stdout should include "        value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0."
   End
 
+  It 'looks up task refs in the konflux catalog'
+    When run ./pipeline-patcher task-ref buildah:0.4
+    The status should be success
+    The stdout line 1 should include "quay.io/konflux-ci/tekton-catalog/task-buildah:0.4"
+  End
+
   It 'looks up trusted task data in the konflux catalog'
     When run ./pipeline-patcher trusted-task-lookup buildah
     The status should be success
     The stdout should include "oci://quay.io/konflux-ci/tekton-catalog/task-buildah:0.4"
     The stdout should include "  - ref: sha256:"
+  End
+
+  It 'looks up task refs in the vanguard catalog'
+    When run ./pipeline-patcher task-ref rpms-signature-scan:0.2
+    The status should be success
+    The stdout line 1 should include "quay.io/konflux-ci/konflux-vanguard/task-rpms-signature-scan:0.2"
   End
 
   It 'looks up trusted task data in the vanguard catalog'
