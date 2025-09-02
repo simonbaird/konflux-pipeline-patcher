@@ -12,7 +12,7 @@ Describe 'command smoke test'
     # Beware this pulls data from github
     When run ./pipeline-patcher list-tasks
     The status should be success
-    The stdout line 1 should eq "apply-tags 0.1"
+    The stdout line 1 should eq "apply-tags 0.2"
     The stdout should include "git-clone "
     The stdout should include "clair-scan "
   End

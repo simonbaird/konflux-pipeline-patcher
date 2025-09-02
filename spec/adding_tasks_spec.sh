@@ -34,7 +34,7 @@ Adding task sast-unicode-check-oci-ta to pipeline $tmp_dir/.tekton/cli-v06-push.
     The value "$(show_diff)" should include "+    - name: sast-shell-check"
     The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check-oci-ta:0.1@sha256"
     The value "$(show_diff)" should include "+    - name: sast-unicode-check"
-    The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check-oci-ta:0.2@sha256"
+    The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check-oci-ta:0.3@sha256"
     # Todo maybe: Make a baseline file and check that it matches exactly
   End
 End
@@ -71,7 +71,7 @@ Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-i
     The value "$(show_diff)" should include "+    - name: sast-shell-check"
     The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check:0.1@sha256"
     The value "$(show_diff)" should include "+    - name: sast-unicode-check"
-    The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check:0.2@sha256"
+    The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check:0.3@sha256"
 
     # Check that build-image-index was replaced with build-container
     The value "$(show_diff)" should not include 'build-image-index'
