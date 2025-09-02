@@ -10,7 +10,7 @@ Describe 'add-tasks'
   tmp_dir=$(mktemp -d)
   trap "rm -rf $tmp_dir" EXIT
   (
-    example_from_github="https://raw.githubusercontent.com/enterprise-contract/ec-cli/a679ce9f52acc7223504867c8871ddd76c9f1ea7"
+    example_from_github="https://raw.githubusercontent.com/conforma/cli/a679ce9f52acc7223504867c8871ddd76c9f1ea7"
     cd $tmp_dir && git init . && mkdir .tekton && cd .tekton
     for y in push pull-request; do curl -sLO $example_from_github/.tekton/cli-v06-$y.yaml; done
     git add * && git commit -m "Testing"
