@@ -8,6 +8,13 @@ indented() {
     awk '{print "  " $0}'
 }
 
+# Print things to stderr for debugging because often stdout is going
+# to be parsed as json or yaml data so we can't print extra junk to it
+debug() {
+    timestamp=$( date '+%Y-%m-%d %H:%M:%S.%N' | head -c23 )
+    echo "$1" | awk "{print \"[$timestamp] DEBUG \" \$0}" >&2
+}
+
 # Extract trusted task data from the acceptable bundles data bundle
 _trusted_task_data() {
     local acceptable_bundles_repo="$KONFLUX_CATALOG/data-acceptable-bundles"
