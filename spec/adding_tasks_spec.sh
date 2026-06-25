@@ -28,9 +28,9 @@ Describe 'add-tasks'
 Adding task sast-unicode-check-oci-ta to pipeline $tmp_dir/.tekton/cli-v06-pull-request.yaml
 Adding task sast-shell-check-oci-ta to pipeline $tmp_dir/.tekton/cli-v06-push.yaml
 Adding task sast-unicode-check-oci-ta to pipeline $tmp_dir/.tekton/cli-v06-push.yaml
- .tekton/cli-v06-pull-request.yaml | 54 +++++++++++++++++++++++++++++++++++++++
- .tekton/cli-v06-push.yaml         | 54 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 108 insertions(+)"
+ .tekton/cli-v06-pull-request.yaml | 58 +++++++++++++++++++++++++++++++++++++++
+ .tekton/cli-v06-push.yaml         | 58 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 116 insertions(+)"
     The value "$(show_diff)" should include "+    - name: sast-shell-check"
     The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check-oci-ta:0.1@sha256"
     The value "$(show_diff)" should include "+    - name: sast-unicode-check"
@@ -65,9 +65,9 @@ Describe 'add-tasks with build-container instead of build-image-index'
 Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-image-pull-request.yaml
 Adding task sast-shell-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-image-push.yaml
 Adding task sast-unicode-check to pipeline $tmp_dir/.tekton/mintmaker-renovate-image-push.yaml
- .tekton/mintmaker-renovate-image-pull-request.yaml | 50 ++++++++++++++++++++++
- .tekton/mintmaker-renovate-image-push.yaml         | 50 ++++++++++++++++++++++
- 2 files changed, 100 insertions(+)"
+ .tekton/mintmaker-renovate-image-pull-request.yaml | 54 ++++++++++++++++++++++
+ .tekton/mintmaker-renovate-image-push.yaml         | 54 ++++++++++++++++++++++
+ 2 files changed, 108 insertions(+)"
     The value "$(show_diff)" should include "+    - name: sast-shell-check"
     The value "$(show_diff)" should include "+            value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check:0.1@sha256"
     The value "$(show_diff)" should include "+    - name: sast-unicode-check"
